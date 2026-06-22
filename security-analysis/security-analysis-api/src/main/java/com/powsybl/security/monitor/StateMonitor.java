@@ -7,13 +7,13 @@
  */
 package com.powsybl.security.monitor;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.powsybl.commons.json.JsonUtil;
 import com.powsybl.contingency.ContingencyContext;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,6 +58,11 @@ public class StateMonitor {
      */
     private final Set<String> threeWindingsTransformerIds = new LinkedHashSet<>();
 
+    /**
+     * Defines which monitored element results are included.
+     */
+    private StateMonitorResultMode resultMode;
+
     public ContingencyContext getContingencyContext() {
         return contingencyContext;
     }
@@ -74,19 +79,35 @@ public class StateMonitor {
         return threeWindingsTransformerIds;
     }
 
+    public StateMonitorResultMode getResultMode() {
+        return resultMode;
+    }
+
+    public StateMonitor(ContingencyContext contingencyContext, Set<String> branchIds, Set<String> voltageLevelIds,
+                        Set<String> threeWindingsTransformerIds) {
+        this(contingencyContext, branchIds, voltageLevelIds, threeWindingsTransformerIds, StateMonitorResultMode.ALL);
+    }
+
+    @JsonCreator
     public StateMonitor(@JsonProperty("contingencyContext") ContingencyContext contingencyContext,
-                        @JsonProperty("branchIds") Set<String> branchIds, @JsonProperty("voltageLevelIds") Set<String> voltageLevelIds,
-                        @JsonProperty("threeWindingsTransformerIds") Set<String> threeWindingsTransformerIds) {
+                        @JsonProperty("branchIds") Set<String> branchIds,
+                        @JsonProperty("voltageLevelIds") Set<String> voltageLevelIds,
+                        @JsonProperty("threeWindingsTransformerIds") Set<String> threeWindingsTransformerIds,
+                        @JsonProperty("resultMode") StateMonitorResultMode resultMode) {
         this.contingencyContext = Objects.requireNonNull(contingencyContext);
         this.branchIds.addAll(Objects.requireNonNull(branchIds));
         this.voltageLevelIds.addAll(Objects.requireNonNull(voltageLevelIds));
         this.threeWindingsTransformerIds.addAll(Objects.requireNonNull(threeWindingsTransformerIds));
+        this.resultMode = Objects.requireNonNullElse(resultMode, StateMonitorResultMode.ALL);
     }
 
     public StateMonitor merge(StateMonitor monitorTobeMerged) {
         this.branchIds.addAll(monitorTobeMerged.getBranchIds());
         this.voltageLevelIds.addAll(monitorTobeMerged.getVoltageLevelIds());
         this.threeWindingsTransformerIds.addAll(monitorTobeMerged.getThreeWindingsTransformerIds());
+        if (monitorTobeMerged.getResultMode() == StateMonitorResultMode.ALL) {
+            this.resultMode = StateMonitorResultMode.ALL;
+        }
         return this;
     }
 
@@ -102,12 +123,13 @@ public class StateMonitor {
         return Objects.equals(contingencyContext, that.contingencyContext) &&
             Objects.equals(branchIds, that.branchIds) &&
             Objects.equals(voltageLevelIds, that.voltageLevelIds) &&
-            Objects.equals(threeWindingsTransformerIds, that.threeWindingsTransformerIds);
+            Objects.equals(threeWindingsTransformerIds, that.threeWindingsTransformerIds) &&
+            Objects.equals(resultMode, that.resultMode);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(contingencyContext, branchIds, voltageLevelIds, threeWindingsTransformerIds);
+        return Objects.hash(contingencyContext, branchIds, voltageLevelIds, threeWindingsTransformerIds, resultMode);
     }
 
     @Override
@@ -117,13 +139,13 @@ public class StateMonitor {
             ", branchIds=" + branchIds +
             ", voltageLevelIds=" + voltageLevelIds +
             ", threeWindingsTransformerIds=" + threeWindingsTransformerIds +
+            ", resultMode=" + resultMode +
             '}';
     }
 
     public static void write(List<StateMonitor> monitors, Path jsonFile) {
         try {
-            OutputStream out = Files.newOutputStream(jsonFile);
-            JsonUtil.createObjectMapper().writer().writeValue(out, monitors);
+            Files.writeString(jsonFile, JsonUtil.createObjectMapper().writer().writeValueAsString(monitors) + "\n");
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

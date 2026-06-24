@@ -40,6 +40,7 @@ In the PowSyBl grid model, the Network contains [substations](#substation), whic
 The `SourceFormat` attribute is a required attribute that indicates the origin of the network model automatically set by the [importers](../grid_exchange_formats/index.md). If the case date and the forecast distance cannot be found in the case file, the network is considered as a snapshot: the case date is set to the current date, and the forecast distance is set to `0`.
 
 **Available extensions**
+- [Line Couplings](extensions.md#line-couplings)
 
 (substation)=
 ## Substation
@@ -356,7 +357,7 @@ as a [TieLine](#tie-line), for both UCTE or CIM-CGMES formats.
 A boundary line has a `Boundary` object that emulates a terminal located at boundary side. A boundary line is a connectable
 with a single terminal located on the network side, but sometimes we need state variables such as active or reactive powers on
 the other side, voltage angle and voltage magnitude at fictitious boundary bus. Note that $P$, $Q$, $V$ and $Angle$ at boundary
-are automatically computed using information from the terminal of the boundary line.  
+are automatically computed using information from the terminal of the boundary line.
 
 
 **Available extensions**
@@ -506,20 +507,17 @@ AC transmission lines are modeled using a standard $\pi$ model with distributed 
 With series impedance $z$ and the shunt admittance on each side $y_1$ and $y_2$:
 
 $$
-\begin{align*}
 \begin{array}{lcl}
 z & = & r+j.x\\
 y_1 & = & g_1 +j. b_1\\
 y_2 & = & g_2 +j. b_2
 \end{array}
-\end{align*}
 $$
 
 The equations of the line, in complex notations, are as follows:
 
 $$
-\begin{align*}
-& \left(\begin{array}{c}
+\left(\begin{array}{c}
 I_{1}\\
 I_{2}
 \end{array}\right)=\left(\begin{array}{cc}
@@ -529,7 +527,6 @@ y_{1}+\dfrac{1}{z} & -\dfrac{1}{z}\\
 V_{1}\\
 V_{2}
 \end{array}\right)
-\end{align*}
 $$
 
 **Characteristics**
@@ -909,6 +906,7 @@ A DC Switch connects two DC Nodes and can be opened or closed.
 |------------|----------------|-------------------------------------------------------------------|
 | $Kind$     | `DcSwitchKind` | Either DISCONNECTOR or BREAKER                                    |
 | $Open$     |                | True if the switch is opened                                      |
+| $R$        | $\Omega$       | The series resistance, non-negative                               |
 
 (dc-ground)=
 #### DC Ground
@@ -945,9 +943,11 @@ LCC and VSC share the following characteristics.
 | $SwitchingLoss$ | MW / A   | Switching losses                                                      |
 | $ResistiveLoss$ | $\Omega$ | Resistive losses                                                      |
 | $PccTerminal$   |          | Point of common coupling (PCC) AC terminal                            |
-| $ControlMode$   |          | The converter's control mode: P_PCC, V_DC or V_DC_DROOP               |
+| $ControlMode$   |          | The converter's control mode: P_PCC, V_DC or P_PCC_DROOP              |
 | $TargetP$       | MW       | Active power target at point of common coupling, load sign convention |
 | $TargetVdc$     | kV       | DC voltage target                                                     |
+| $MinP$          | MW       | Minimum active power at point of common coupling, load sign convention |
+| $MaxP$          | MW       | Maximum active power at point of common coupling, load sign convention |
 | $DroopCurve$    |          | Droop curve for droop control mode                                    |
 
 Converter losses are modeled using the `IdleLoss`, `SwitchingLoss` and `ResistiveLoss` parameters, all positive values.
@@ -1007,6 +1007,12 @@ Each droop segment in the `DroopCurve` is defined with minimal and maximal volta
 droop segment should be the one which verifies:
 $V_{DC} \in [V_{min}, V_{max}]$ where $V_{DC}$ is the DC Voltage at converter's Terminals.
 
+`MinP` and `MaxP` define the operational active power limits of the converter at the Point of Common Coupling, using the
+same load sign convention as `TargetP`.
+
+`MinP` must be less than or equal to `MaxP`. Both attributes are optional; if not set, the converter is considered with unlimited active power capability.
+
+`MinP` and `MaxP` are not serializable as of today. Trying to serialize AC-DC converters with non-default values of `MinP` or `MaxP` will raise an error.
 
 
 (line-commutated-converter)=
@@ -1058,11 +1064,11 @@ DC equipment connectivity may be modified in two ways:
 
 PowSyBl's IIDM topology processor computes DC Buses as follows:
 - A DC Bus is formed when there is at least one DC Terminal connected to a DC Node.
-- DC Nodes linked by a closed DC switch are considered part of the same DC Bus.
+- DC Nodes linked by a closed DC switch are considered part of the same DC Bus when the resistance of the DcSwitch is zero, otherwise they are in distinct buses.
 - A DC Node with no switch connected but with at least a DC Terminal connected will form a DC Bus.
 - DC Nodes without any connected DC Terminal do not form a DC Bus. A DC Bus is guaranteed to contain at least one connected DC Terminal.
 
-DC Buses linked together via DC Lines and/or AC/DC Converters are part of the same *DC Component* (also called *DC Island*).
+DC Buses linked together via DC Lines, AC/DC Converters and/or closed DC switches are part of the same *DC Component* (also called *DC Island*).
 *Synchronous Components* (also called *AC Islands*) connected together via a DC island through AC/DC converters will form a
 *Connected Component*.
 

@@ -9,7 +9,11 @@
 package com.powsybl.security;
 
 import com.powsybl.commons.io.table.*;
-import com.powsybl.contingency.violations.*;
+import com.powsybl.contingency.violations.LimitViolation;
+import com.powsybl.contingency.violations.LimitViolationFilter;
+import com.powsybl.contingency.violations.LimitViolationHelper;
+import com.powsybl.contingency.violations.LimitViolationType;
+import com.powsybl.contingency.violations.LoadingLimitType;
 import com.powsybl.iidm.network.Country;
 import com.powsybl.iidm.network.Identifiable;
 import com.powsybl.iidm.network.LoadingLimits;

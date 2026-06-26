@@ -8,7 +8,12 @@
 package com.powsybl.security;
 
 import com.powsybl.contingency.ContingencyContext;
-import com.powsybl.contingency.violations.*;
+import com.powsybl.contingency.violations.BusBreakerViolationLocation;
+import com.powsybl.contingency.violations.LimitViolation;
+import com.powsybl.contingency.violations.LimitViolationType;
+import com.powsybl.contingency.violations.LoadingLimitType;
+import com.powsybl.contingency.violations.NodeBreakerViolationLocation;
+import com.powsybl.contingency.violations.ViolationLocation;
 import com.powsybl.iidm.criteria.NetworkElementIdListCriterion;
 import com.powsybl.iidm.criteria.duration.EqualityTemporaryDurationCriterion;
 import com.powsybl.iidm.criteria.duration.PermanentDurationCriterion;

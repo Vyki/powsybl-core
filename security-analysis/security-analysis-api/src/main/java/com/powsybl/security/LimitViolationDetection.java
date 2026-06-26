@@ -7,7 +7,12 @@
  */
 package com.powsybl.security;
 
-import com.powsybl.contingency.violations.*;
+import com.powsybl.contingency.violations.BusBreakerViolationLocation;
+import com.powsybl.contingency.violations.LimitViolation;
+import com.powsybl.contingency.violations.LimitViolationType;
+import com.powsybl.contingency.violations.LoadingLimitType;
+import com.powsybl.contingency.violations.NodeBreakerViolationLocation;
+import com.powsybl.contingency.violations.ViolationLocation;
 import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.limitmodification.LimitsComputer;
 import com.powsybl.iidm.network.limitmodification.result.LimitsContainer;
